@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#b3122a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spin It!">
+<title>Spin It! Wheel of Choices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Shade&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --red:#d7263d; --red-dk:#8f0f22; --cream:#fff4d6; --gold:#ffc93c; --gold-dk:#c98a00;
+    --blue:#1b6ec2; --navy:#14213d; --ink:#2a1608;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--navy)}
+  body{
+    font-family:'Lilita One',system-ui,sans-serif;color:var(--cream);
+    display:flex;flex-direction:column;align-items:center;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255,201,60,.25), transparent 60%),
+      repeating-conic-gradient(from 0deg at 50% -10%, #b3122a 0deg 7.5deg, #f6e7c8 7.5deg 15deg);
+    user-select:none;-webkit-user-select:none;
+  }
+  body::before{ /* darken tent stripes a touch so the wheel pops */
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background:radial-gradient(circle at 50% 55%, rgba(20,33,61,.15) 0%, rgba(20,33,61,.7) 75%);
+  }
+  header{position:relative;z-index:2;width:100%;max-width:560px;padding:calc(10px + env(safe-area-inset-top)) 14px 4px;display:flex;align-items:center;gap:8px}
+  h1{
+    flex:1;margin:0;text-align:center;font-family:'Bungee Shade',cursive;font-weight:400;
+    font-size:clamp(28px,9vw,44px);color:var(--gold);letter-spacing:1px;
+    text-shadow:0 3px 0 var(--red-dk),0 6px 12px rgba(0,0,0,.5);
+    animation:sway 3s ease-in-out infinite;
+  }
+  @keyframes sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+  .iconbtn{
+    width:42px;height:42px;border-radius:50%;border:3px solid var(--gold);background:var(--red);
+    color:var(--cream);font-size:20px;display:grid;place-items:center;cursor:pointer;
+    box-shadow:0 3px 0 var(--red-dk);
+  }
+  .iconbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--red-dk)}
+  #chips{
+    position:relative;z-index:2;display:flex;gap:8px;overflow-x:auto;width:100%;max-width:560px;
+    padding:8px 14px 10px;scrollbar-width:none;
+  }
+  #chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;font-family:'Bungee',cursive;font-size:13px;letter-spacing:.5px;
+    padding:9px 16px;border:none;cursor:pointer;color:var(--ink);background:var(--cream);
+    /* ticket-stub notches */
+    -webkit-mask:radial-gradient(circle 7px at 0 50%,transparent 6.5px,#000 7px) left/51% 100% no-repeat,
+                 radial-gradient(circle 7px at 100% 50%,transparent 6.5px,#000 7px) right/51% 100% no-repeat;
+            mask:radial-gradient(circle 7px at 0 50%,transparent 6.5px,#000 7px) left/51% 100% no-repeat,
+                 radial-gradient(circle 7px at 100% 50%,transparent 6.5px,#000 7px) right/51% 100% no-repeat;
+    transition:transform .15s;
+  }
+  .chip.on{background:var(--gold);transform:scale(1.08) rotate(-2deg)}
+  #stage{position:relative;z-index:1;flex:1;width:100%;display:grid;place-items:center;min-height:0}
+  #wheelWrap{position:relative;width:min(92vw,62vh,520px);aspect-ratio:1}
+  #wheel{width:100%;height:100%;display:block;touch-action:none;filter:drop-shadow(0 14px 22px rgba(0,0,0,.55))}
+  #pointer{
+    position:absolute;left:50%;top:-4%;width:13%;height:17%;transform-origin:50% 22%;
+    transform:translateX(-50%);z-index:3;pointer-events:none;
+    filter:drop-shadow(0 4px 3px rgba(0,0,0,.5));transition:transform .08s;
+  }
+  #hub{
+    position:absolute;left:50%;top:50%;width:24%;aspect-ratio:1;transform:translate(-50%,-50%);
+    border-radius:50%;border:5px solid var(--gold);cursor:pointer;z-index:2;
+    background:radial-gradient(circle at 35% 30%,#ff5a6e,var(--red) 55%,var(--red-dk));
+    font-family:'Bungee',cursive;color:var(--cream);font-size:clamp(14px,4.4vw,24px);
+    display:grid;place-items:center;text-shadow:0 2px 0 var(--red-dk);
+    box-shadow:0 0 0 4px var(--red-dk),inset 0 -6px 10px rgba(0,0,0,.35),0 6px 14px rgba(0,0,0,.5);
+    animation:hubPulse 1.6s ease-in-out infinite;
+  }
+  #hub:active{transform:translate(-50%,-50%) scale(.94)}
+  @keyframes hubPulse{0%,100%{box-shadow:0 0 0 4px var(--red-dk),inset 0 -6px 10px rgba(0,0,0,.35),0 0 0 rgba(255,201,60,0)}
+    50%{box-shadow:0 0 0 4px var(--red-dk),inset 0 -6px 10px rgba(0,0,0,.35),0 0 26px rgba(255,201,60,.9)}}
+  body.spinning #hub{animation:none;filter:brightness(.85)}
+  footer{position:relative;z-index:2;padding:6px 14px calc(14px + env(safe-area-inset-bottom));width:100%;max-width:560px;text-align:center}
+  #spinBtn{
+    font-family:'Bungee',cursive;font-size:clamp(22px,7vw,30px);letter-spacing:2px;
+    width:100%;padding:14px 0;border-radius:18px;border:4px solid var(--gold);cursor:pointer;
+    color:var(--cream);background:linear-gradient(#ef3b52,var(--red) 60%,#b3122a);
+    box-shadow:0 7px 0 var(--red-dk),0 12px 20px rgba(0,0,0,.45);text-shadow:0 2px 0 var(--red-dk);
+  }
+  #spinBtn:active{transform:translateY(5px);box-shadow:0 2px 0 var(--red-dk)}
+  #spinBtn:disabled{filter:grayscale(.5) brightness(.8)}
+  #status{font-size:13px;opacity:.85;margin-top:8px;min-height:1em;text-shadow:0 1px 2px #000}
+  #status button{font:inherit;color:var(--gold);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0 4px}
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:20}
+  /* Winner card */
+  .overlay{position:fixed;inset:0;z-index:15;display:none;place-items:center;background:rgba(10,14,30,.55);padding:20px}
+  .overlay.show{display:grid}
+  #winCard{
+    position:relative;width:min(88vw,420px);padding:22px 18px 18px;text-align:center;color:var(--ink);
+    background:var(--cream);border-radius:18px;border:6px solid var(--gold);
+    box-shadow:0 0 0 6px var(--red),0 20px 50px rgba(0,0,0,.6);
+    animation:popIn .65s cubic-bezier(.2,1.6,.4,1) both;
+  }
+  @keyframes popIn{0%{transform:scale(.2) rotate(-25deg);opacity:0}100%{transform:scale(1) rotate(0)}}
+  #winCard .banner{
+    font-family:'Bungee',cursive;font-size:18px;letter-spacing:3px;color:var(--cream);background:var(--red);
+    display:inline-block;padding:6px 18px;margin-top:-44px;border-radius:8px;box-shadow:0 4px 0 var(--red-dk);
+  }
+  #winName{
+    font-family:'Bungee',cursive;font-size:clamp(26px,9vw,44px);line-height:1.1;margin:18px 4px 8px;
+    color:var(--red);word-break:break-word;text-shadow:0 3px 0 var(--gold);
+    animation:wobble 1.2s ease-in-out .6s infinite;
+  }
+  @keyframes wobble{0%,100%{transform:scale(1) rotate(0)}25%{transform:scale(1.06) rotate(-2deg)}75%{transform:scale(1.06) rotate(2deg)}}
+  #winList{font-size:14px;opacity:.7;margin-bottom:14px}
+  .stars{position:absolute;inset:0;pointer-events:none}
+  .stars span{position:absolute;font-size:22px;animation:twinkle 1s ease-in-out infinite}
+  @keyframes twinkle{0%,100%{transform:scale(.6) rotate(0);opacity:.4}50%{transform:scale(1.2) rotate(30deg);opacity:1}}
+  .btnRow{display:flex;gap:10px}
+  .btn{
+    flex:1;font-family:'Bungee',cursive;font-size:15px;padding:12px 6px;border-radius:12px;cursor:pointer;
+    border:3px solid var(--ink);background:var(--gold);color:var(--ink);box-shadow:0 4px 0 var(--ink);
+  }
+  .btn.alt{background:#fff}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+  /* Settings */
+  #settings .panel{
+    width:min(92vw,460px);max-height:86vh;overflow:auto;background:var(--cream);color:var(--ink);
+    border-radius:16px;border:5px solid var(--gold);padding:18px;font-family:system-ui,sans-serif;
+    box-shadow:0 0 0 5px var(--red),0 20px 50px rgba(0,0,0,.6);
+  }
+  #settings h2{font-family:'Bungee',cursive;font-weight:400;margin:0 0 10px;color:var(--red);font-size:22px}
+  #settings label{font-weight:700;font-size:14px;display:block;margin-bottom:6px}
+  #sheetUrl{width:100%;font-size:15px;padding:10px;border-radius:8px;border:2px solid var(--ink);margin-bottom:10px}
+  #settings ol{font-size:13.5px;line-height:1.45;padding-left:20px;margin:12px 0}
+  #settings .err{color:#b3122a;font-weight:700;font-size:14px;min-height:1em;margin:6px 0}
+  #settings .row2{display:flex;gap:10px;margin-top:8px}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:14px;margin:10px 0}
+</style>
+</head>
+<body>
+<header>
+  <button class="iconbtn" id="soundBtn" aria-label="Sound on/off">🔊</button>
+  <h1>SPIN IT!</h1>
+  <button class="iconbtn" id="gearBtn" aria-label="Settings">⚙️</button>
+</header>
+<nav id="chips"></nav>
+<main id="stage">
+  <div id="wheelWrap">
+    <svg id="pointer" viewBox="0 0 60 80" aria-hidden="true">
+      <path d="M30 78 L6 22 A26 26 0 1 1 54 22 Z" fill="#ffc93c" stroke="#8f0f22" stroke-width="4"/>
+      <circle cx="30" cy="22" r="9" fill="#d7263d" stroke="#8f0f22" stroke-width="3"/>
+    </svg>
+    <canvas id="wheel"></canvas>
+    <div id="hub">SPIN</div>
+  </div>
+</main>
+<footer>
+  <button id="spinBtn">SPIN!</button>
+  <div id="status"></div>
+</footer>
+
+<div class="overlay" id="winner">
+  <div id="winCard">
+    <div class="stars" id="stars"></div>
+    <div class="banner">★ WINNER ★</div>
+    <div id="winName"></div>
+    <div id="winList"></div>
+    <div class="btnRow">
+      <button class="btn" id="againBtn">SPIN AGAIN</button>
+      <button class="btn alt" id="closeBtn">OK!</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="settings">
+  <div class="panel">
+    <h2>Your lists</h2>
+    <label for="sheetUrl">Google Sheet link</label>
+    <input id="sheetUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off">
+    <div class="err" id="setErr"></div>
+    <div class="row2">
+      <button class="btn" id="saveBtn">LOAD</button>
+      <button class="btn alt" id="demoBtn">USE DEMO</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="noRepeat"> Don't land on the same thing twice in a row</label>
+    <ol>
+      <li>Share the Sheet: <b>Share → General access → Anyone with the link → Viewer</b>.</li>
+      <li>Add a tab called <b>Lists</b>. Put one list name per row in column A (row 1 is a header and is skipped).</li>
+      <li>Make a tab for each list, named exactly as in <b>Lists</b>. Put one option per row in column A, with no header.</li>
+      <li>Paste the Sheet link above. Edits show up when you tap <b>refresh</b>.</li>
+    </ol>
+    <button class="btn alt" id="closeSet" style="width:100%">CLOSE</button>
+  </div>
+</div>
+
+<canvas id="fx"></canvas>
+
+<script>
+(() => {
+'use strict';
+/* ---------- storage (may be unavailable) ---------- */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('spinit.'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('spinit.'+k, JSON.stringify(v)); }catch(e){} }
+};
+
+const DEMO = {
+  'Dinner': ['Pizza','Thai curry','Burgers','Sushi','Tacos','Ramen','Schnitzel','Dumplings'],
+  'Movie night': ['Comedy','Horror','Sci-fi','Animated','Documentary','Action','Rom-com'],
+  'Weekend': ['Hike','Museum','Flea market','Board games','Bike ride','Lake day'],
+  'Who pays?': ['You','Me','Split it','Loser of rock-paper-scissors']
+};
+
+let lists = store.get('lists', null);
+let source = store.get('source', null); // {id} or null for demo
+let current = store.get('current', null);
+let soundOn = store.get('sound', true);
+let noRepeat = store.get('noRepeat', true);
+let lastWin = {};
+if (!lists || !Object.keys(lists).length) { lists = DEMO; source = null; }
+if (!current || !lists[current]) current = Object.keys(lists)[0];
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const canvas = $('wheel'), ctx = canvas.getContext('2d');
+const fx = $('fx'), fctx = fx.getContext('2d');
+const pointer = $('pointer');
+const chipsEl = $('chips'), statusEl = $('status');
+
+/* ---------- palette ---------- */
+const SEG = [
+  {bg:'#d7263d', fg:'#fff4d6'}, {bg:'#ffc93c', fg:'#2a1608'},
+  {bg:'#1b6ec2', fg:'#fff4d6'}, {bg:'#fff4d6', fg:'#b3122a'},
+  {bg:'#2a9d5c', fg:'#fff4d6'}, {bg:'#f77f00', fg:'#2a1608'},
+  {bg:'#7b2cbf', fg:'#fff4d6'}, {bg:'#fff4d6', fg:'#1b6ec2'}
+];
+function segColor(i, n){
+  // avoid same colour on first/last neighbour
+  let c = SEG[i % SEG.length];
+  if (i === n-1 && n % SEG.length === 1 && n > 1) c = SEG[(i+2) % SEG.length];
+  return c;
+}
+
+/* ---------- wheel state ---------- */
+let rot = 0;                // radians, clockwise
+let spinning = false, anim = null, winnerIdx = -1, winTime = 0;
+let lastTickSeg = -1;
+const TAU = Math.PI*2;
+
+function items(){ return (lists[current] || []).filter(s => String(s).trim()); }
+
+function sizeCanvas(){
+  const r = canvas.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 3);
+  canvas.width = Math.round(r.width*dpr); canvas.height = Math.round(r.height*dpr);
+  fx.width = innerWidth*dpr; fx.height = innerHeight*dpr;
+  fctx.setTransform(dpr,0,0,dpr,0,0);
+}
+
+function fitText(text, maxW, size){
+  ctx.font = `${size}px 'Lilita One', sans-serif`;
+  if (ctx.measureText(text).width <= maxW) return text;
+  let t = text;
+  while (t.length > 1 && ctx.measureText(t+'…').width > maxW) t = t.slice(0,-1);
+  return t+'…';
+}
+
+function draw(now){
+  const W = canvas.width, cx = W/2, R = W/2;
+  const list = items(), n = list.length;
+  ctx.clearRect(0,0,W,W);
+
+  // outer rim
+  const rimR = R*0.985, faceR = R*0.86;
+  let g = ctx.createRadialGradient(cx,cx,faceR,cx,cx,rimR);
+  g.addColorStop(0,'#8f0f22'); g.addColorStop(.35,'#d7263d'); g.addColorStop(1,'#6e0b1a');
+  ctx.beginPath(); ctx.arc(cx,cx,rimR,0,TAU); ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = R*0.012; ctx.strokeStyle = '#ffc93c'; ctx.stroke();
+
+  // segments
+  if (n === 0){
+    ctx.beginPath(); ctx.arc(cx,cx,faceR,0,TAU); ctx.fillStyle='#fff4d6'; ctx.fill();
+    ctx.fillStyle='#b3122a'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font = `${R*0.09}px 'Lilita One'`; ctx.fillText('This list is empty', cx, cx - R*0.3);
+  } else {
+    const seg = TAU/n;
+    for (let i=0;i<n;i++){
+      const a0 = rot + i*seg - Math.PI/2, a1 = a0 + seg;
+      const c = segColor(i,n);
+      ctx.beginPath(); ctx.moveTo(cx,cx); ctx.arc(cx,cx,faceR,a0,a1); ctx.closePath();
+      ctx.fillStyle = c.bg; ctx.fill();
+      // subtle shading
+      const sg = ctx.createRadialGradient(cx,cx,faceR*0.2,cx,cx,faceR);
+      sg.addColorStop(0,'rgba(255,255,255,.12)'); sg.addColorStop(1,'rgba(0,0,0,.18)');
+      ctx.fillStyle = sg; ctx.fill();
+      // winner glow
+      if (i === winnerIdx && !spinning){
+        const p = 0.5 + 0.5*Math.sin((now - winTime)/120);
+        ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.35*p})`; ctx.fill();
+      }
+      ctx.lineWidth = R*0.008; ctx.strokeStyle = 'rgba(42,22,8,.55)'; ctx.stroke();
+
+      // label
+      ctx.save();
+      ctx.translate(cx,cx); ctx.rotate(a0 + seg/2);
+      const size = Math.max(R*0.045, Math.min(R*0.11, R*0.75/Math.max(n,6)*1.25));
+      const maxW = faceR*0.70;
+      const label = fitText(String(list[i]), maxW, size);
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.lineWidth = size*0.18; ctx.strokeStyle = 'rgba(0,0,0,.25)';
+      ctx.strokeText(label, faceR*0.92, 0);
+      ctx.fillStyle = c.fg; ctx.fillText(label, faceR*0.92, 0);
+      ctx.restore();
+    }
+    // pegs between segments
+    for (let i=0;i<n;i++){
+      const a = rot + i*seg - Math.PI/2;
+      ctx.beginPath(); ctx.arc(cx+Math.cos(a)*faceR*0.97, cx+Math.sin(a)*faceR*0.97, R*0.018, 0, TAU);
+      ctx.fillStyle='#fff4d6'; ctx.fill(); ctx.lineWidth=R*0.006; ctx.strokeStyle='#8f0f22'; ctx.stroke();
+    }
+  }
+
+  // marquee bulbs
+  const B = 24, bulbR = R*0.026, ringR = (faceR+rimR)/2 + R*0.01;
+  const t = now/1000;
+  for (let i=0;i<B;i++){
+    const a = i/B*TAU - Math.PI/2;
+    let on;
+    if (spinning) on = ((i + Math.floor(t*18)) % 3) === 0;          // fast chase
+    else if (winnerIdx >= 0 && now - winTime < 4000) on = Math.floor(t*8) % 2 === 0; // all flash
+    else on = (i % 2) === (Math.floor(t*1.5) % 2);                    // lazy alternate
+    const x = cx+Math.cos(a)*ringR, y = cx+Math.sin(a)*ringR;
+    if (on){
+      const gl = ctx.createRadialGradient(x,y,0,x,y,bulbR*3);
+      gl.addColorStop(0,'rgba(255,240,170,.9)'); gl.addColorStop(1,'rgba(255,200,60,0)');
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x,y,bulbR*3,0,TAU); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(x,y,bulbR,0,TAU);
+    ctx.fillStyle = on ? '#fffbe6' : '#a8741a'; ctx.fill();
+  }
+}
+
+/* ---------- sound ---------- */
+let ac = null;
+function audio(){ if (!soundOn) return null; try{ ac = ac || new (window.AudioContext||window.webkitAudioContext)(); if (ac.state==='suspended') ac.resume(); }catch(e){ ac=null; } return ac; }
+function tone(freq, start, dur, type='square', vol=0.08){
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, a.currentTime+start);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+start+dur);
+  o.connect(g).connect(a.destination); o.start(a.currentTime+start); o.stop(a.currentTime+start+dur+0.02);
+}
+const tick = () => tone(1400 + Math.random()*200, 0, 0.035, 'square', 0.05);
+function fanfare(){
+  [[523,0],[659,.12],[784,.24],[1047,.36],[784,.52],[1047,.64]].forEach(([f,s],i)=>
+    tone(f, s, i===5 ? .5 : .14, 'triangle', .12));
+  [[262,.36],[330,.36],[392,.36]].forEach(([f,s])=>tone(f,s,.6,'sawtooth',.03));
+}
+function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+
+/* ---------- spin ---------- */
+function easeOut(t){ return 1 - Math.pow(1-t, 4); }
+
+function segAtPointer(r, n){
+  const a = ((-r % TAU) + TAU) % TAU;
+  return Math.floor(a / (TAU/n)) % n;
+}
+
+function spin(power=1){
+  const list = items(), n = list.length;
+  if (spinning || n === 0) return;
+  audio(); // unlock audio inside the user gesture
+  hideWinner();
+  let w = Math.floor(Math.random()*n);
+  if (noRepeat && n > 1 && lastWin[current] === w) w = (w + 1 + Math.floor(Math.random()*(n-1))) % n;
+  const seg = TAU/n, f = 0.15 + Math.random()*0.7;
+  const desired = ((TAU - (w+f)*seg) % TAU + TAU) % TAU;
+  const curMod = ((rot % TAU) + TAU) % TAU;
+  const delta = ((desired - curMod) % TAU + TAU) % TAU;
+  const turns = Math.round(5 + Math.random()*3 + (power-1)*2);
+  const from = rot, to = rot + turns*TAU + delta;
+  const dur = 4200 + Math.random()*1300 + (power-1)*600;
+  spinning = true; winnerIdx = -1; document.body.classList.add('spinning');
+  $('spinBtn').disabled = true;
+  lastTickSeg = segAtPointer(rot, n);
+  const t0 = performance.now();
+  anim = (now) => {
+    const t = Math.min(1, (now - t0)/dur);
+    rot = from + (to - from)*easeOut(t);
+    const s = segAtPointer(rot, n);
+    if (s !== lastTickSeg){
+      lastTickSeg = s; tick(); buzz(4);
+      pointer.style.transform = 'translateX(-50%) rotate(-18deg)';
+      setTimeout(()=>pointer.style.transform='translateX(-50%)', 60);
+    }
+    if (t >= 1){ anim = null; finish(w); }
+  };
+}
+
+function finish(w){
+  spinning = false; document.body.classList.remove('spinning');
+  $('spinBtn').disabled = false;
+  winnerIdx = w; winTime = performance.now(); lastWin[current] = w;
+  const name = items()[w];
+  buzz([30,40,30,40,80]); fanfare(); confetti();
+  // little settle wobble before the card pops
+  setTimeout(() => showWinner(name), 650);
+}
+
+/* ---------- winner card ---------- */
+function showWinner(name){
+  $('winName').textContent = name;
+  $('winList').textContent = current;
+  const st = $('stars'); st.innerHTML = '';
+  for (let i=0;i<10;i++){
+    const s = document.createElement('span');
+    s.textContent = ['★','✦','✷'][i%3];
+    s.style.color = ['#ffc93c','#d7263d','#1b6ec2'][i%3];
+    const a = i/10*TAU; s.style.left = (50 + Math.cos(a)*52)+'%'; s.style.top = (50 + Math.sin(a)*58)+'%';
+    s.style.animationDelay = (i*0.1)+'s'; st.appendChild(s);
+  }
+  $('winner').classList.add('show');
+}
+function hideWinner(){ $('winner').classList.remove('show'); }
+
+/* ---------- confetti ---------- */
+let parts = [];
+function confetti(){
+  const cols = ['#d7263d','#ffc93c','#1b6ec2','#fff4d6','#2a9d5c','#f77f00','#7b2cbf'];
+  const W = innerWidth, H = innerHeight;
+  for (let k=0;k<2;k++){
+    const ox = k ? W : 0;
+    const dir = k ? -1 : 1;
+    for (let i=0;i<90;i++){
+      parts.push({x:ox, y:H*0.8, vx:dir*(3 + Math.random()*9), vy:-(11 + Math.random()*10),
+        r:Math.random()*TAU, vr:(Math.random()-.5)*.4, w:6+Math.random()*7, h:4+Math.random()*5,
+        c:cols[i%cols.length], life:0, shape:Math.random()<.25?'star':'rect'});
+    }
+  }
+  // burst from wheel centre too
+  const rc = canvas.getBoundingClientRect(), cx = rc.left+rc.width/2, cy = rc.top+rc.height/2;
+  for (let i=0;i<70;i++){
+    const a = Math.random()*TAU, v = 4+Math.random()*9;
+    parts.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v-4,r:Math.random()*TAU,vr:(Math.random()-.5)*.4,
+      w:5+Math.random()*6,h:4+Math.random()*4,c:cols[i%cols.length],life:0,shape:Math.random()<.3?'star':'rect'});
+  }
+}
+function starPath(c, s){
+  c.beginPath();
+  for (let i=0;i<10;i++){ const r = i%2 ? s*.45 : s; const a = i*Math.PI/5 - Math.PI/2; c.lineTo(Math.cos(a)*r, Math.sin(a)*r); }
+  c.closePath();
+}
+function drawFx(){
+  fctx.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p => p.y < innerHeight + 40 && p.life < 400);
+  for (const p of parts){
+    p.life++; p.vy += 0.32; p.vx *= 0.985; p.vy *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+    fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.r);
+    fctx.fillStyle = p.c;
+    if (p.shape==='star'){ starPath(fctx, p.w*0.8); fctx.fill(); }
+    else { fctx.scale(1, Math.cos(p.life*0.15)); fctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); }
+    fctx.restore();
+  }
+}
+
+/* ---------- main loop ---------- */
+function loop(now){
+  if (anim) anim(now);
+  draw(now); drawFx();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- chips ---------- */
+function renderChips(){
+  chipsEl.innerHTML = '';
+  Object.keys(lists).forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (name===current ? ' on' : '');
+    b.textContent = name;
+    b.onclick = () => {
+      if (spinning || name === current) return;
+      current = name; store.set('current', current); winnerIdx = -1; hideWinner();
+      renderChips(); tone(880,0,.06,'triangle',.08);
+    };
+    chipsEl.appendChild(b);
+  });
+  const on = chipsEl.querySelector('.on'); if (on) on.scrollIntoView({inline:'center', block:'nearest'});
+}
+
+/* ---------- Google Sheet loading ---------- */
+// Reads tabs by name via the Google Visualization endpoint as JSONP (a script tag),
+// which works from any website without CORS. The Sheet must be shared "Anyone with the link".
+function sheetId(url){
+  const m = String(url).match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]{20,})/);
+  return m ? m[1] : (/^[a-zA-Z0-9-_]{25,}$/.test(url.trim()) ? url.trim() : null);
+}
+let cbN = 0;
+function readTab(id, tab){
+  return new Promise((resolve, reject) => {
+    const cb = '__spinit_cb' + (++cbN);
+    const s = document.createElement('script');
+    const timer = setTimeout(() => done(new Error('timeout')), 12000);
+    function done(err, data){
+      clearTimeout(timer); delete window[cb]; s.remove();
+      err ? reject(err) : resolve(data);
+    }
+    window[cb] = (resp) => {
+      if (!resp || resp.status === 'error') return done(new Error((resp && resp.errors && resp.errors[0] && resp.errors[0].detailed_message) || 'sheet error'));
+      const rows = (resp.table.rows || []).map(r => (r.c || []).map(c => c == null ? '' : (c.f != null ? String(c.f) : (c.v == null ? '' : String(c.v)))));
+      done(null, rows);
+    };
+    s.onerror = () => done(new Error('blocked'));
+    s.src = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json;responseHandler:${cb}` +
+            `&headers=0&sheet=${encodeURIComponent(tab)}&_=${Date.now()}`;
+    document.head.appendChild(s);
+  });
+}
+async function loadFromSheet(id){
+  const idx = await readTab(id, 'Lists');
+  const names = idx.slice(1).map(r => (r[0]||'').trim()).filter(Boolean);
+  if (!names.length) throw new Error('The Lists tab has no list names under the header row.');
+  const out = {}, missing = [];
+  await Promise.all(names.map(async n => {
+    try{ out[n] = (await readTab(id, n)).map(r => (r[0]||'').trim()).filter(Boolean); }
+    catch(e){ missing.push(n); }
+  }));
+  const ordered = {}; names.forEach(n => { if (out[n]) ordered[n] = out[n]; });
+  if (!Object.keys(ordered).length) throw new Error('Couldn\'t read any of the list tabs.');
+  return {lists: ordered, missing};
+}
+function ago(ts){
+  if (!ts) return '';
+  const m = Math.round((Date.now()-ts)/60000);
+  return m < 1 ? 'just now' : m < 60 ? m+' min ago' : m < 1440 ? Math.round(m/60)+' h ago' : Math.round(m/1440)+' d ago';
+}
+function setStatus(msg){
+  if (msg != null){ statusEl.textContent = msg; return; }
+  if (!source){ statusEl.innerHTML = 'Demo lists · <button id="lnk">connect your Sheet</button>'; $('lnk').onclick = openSettings; return; }
+  statusEl.innerHTML = `Updated ${ago(store.get('updated',0))} · <button id="lnk">refresh</button>`;
+  $('lnk').onclick = refresh;
+}
+async function refresh(){
+  if (!source || spinning) return;
+  setStatus('Loading your lists…');
+  try{
+    const r = await loadFromSheet(source.id);
+    lists = r.lists; store.set('lists', lists); store.set('updated', Date.now());
+    if (!lists[current]) current = Object.keys(lists)[0];
+    store.set('current', current); renderChips(); setStatus();
+    if (r.missing.length) setStatus(`Couldn't find tab: ${r.missing.join(', ')} · check the names match`);
+  }catch(e){
+    setStatus(`Couldn't reach the Sheet. Showing saved lists. Is it shared "Anyone with the link"?`);
+  }
+}
+
+/* ---------- settings ---------- */
+function openSettings(){
+  $('sheetUrl').value = store.get('url','');
+  $('setErr').textContent = ''; $('noRepeat').checked = noRepeat;
+  $('settings').classList.add('show');
+}
+$('gearBtn').onclick = openSettings;
+$('closeSet').onclick = () => $('settings').classList.remove('show');
+$('noRepeat').onchange = e => { noRepeat = e.target.checked; store.set('noRepeat', noRepeat); };
+$('saveBtn').onclick = async () => {
+  const url = $('sheetUrl').value.trim(), id = sheetId(url);
+  if (!id){ $('setErr').textContent = 'That doesn\'t look like a Google Sheets link.'; return; }
+  $('setErr').textContent = 'Loading…';
+  try{
+    const r = await loadFromSheet(id);
+    lists = r.lists; source = {id}; current = Object.keys(lists)[0];
+    store.set('url', url); store.set('source', source); store.set('lists', lists);
+    store.set('current', current); store.set('updated', Date.now());
+    renderChips(); setStatus(); $('settings').classList.remove('show'); winnerIdx = -1;
+    if (r.missing.length) setStatus(`Couldn't find tab: ${r.missing.join(', ')}`);
+  }catch(e){
+    $('setErr').textContent = /no list names|any of the list/.test(e.message) ? e.message :
+      'Couldn\'t read it. Check the Sheet is shared as "Anyone with the link: Viewer" and has a tab named Lists. (Sheets can\'t load in the claude.ai preview; use your hosted copy.)';
+  }
+};
+$('demoBtn').onclick = () => {
+  lists = DEMO; source = null; current = Object.keys(lists)[0];
+  store.set('source', null); store.set('lists', null); store.set('current', current);
+  renderChips(); setStatus(); $('settings').classList.remove('show');
+};
+
+/* ---------- controls ---------- */
+$('spinBtn').onclick = () => spin(1);
+$('hub').onclick = () => spin(1);
+$('againBtn').onclick = () => { hideWinner(); setTimeout(()=>spin(1), 150); };
+$('closeBtn').onclick = hideWinner;
+$('winner').onclick = e => { if (e.target.id === 'winner') hideWinner(); };
+function syncSound(){ $('soundBtn').textContent = soundOn ? '🔊' : '🔇'; }
+$('soundBtn').onclick = () => { soundOn = !soundOn; store.set('sound', soundOn); syncSound(); if (soundOn) tone(880,0,.08,'triangle',.1); };
+
+// flick the wheel to spin it
+let drag = null;
+canvas.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY, t:performance.now()}; });
+canvas.addEventListener('pointerup', e => {
+  if (!drag) return;
+  const dx = e.clientX-drag.x, dy = e.clientY-drag.y, d = Math.hypot(dx,dy), dt = performance.now()-drag.t;
+  drag = null;
+  if (d > 40 && dt < 600) spin(Math.min(2, 1 + (d/dt)/3));
+});
+
+addEventListener('resize', sizeCanvas);
+document.fonts && document.fonts.ready.then(()=>{});
+sizeCanvas(); syncSound(); renderChips(); setStatus();
+requestAnimationFrame(loop);
+if (source) refresh();
+setInterval(() => { if (source && !spinning) setStatus(); }, 60000);
+})();
+</script>
+</body>
+</html>
